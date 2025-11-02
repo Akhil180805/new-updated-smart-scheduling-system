@@ -6,14 +6,14 @@ import { Timetable, Lecture } from '../../types';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import { MOCK_SUBJECTS_BY_DEPT } from '../../services/mockData';
-import { ChevronLeftIcon, PlusIcon, SearchIcon, BookOpenIcon, UsersIcon } from '../../components/icons/Icons';
+import { ChevronLeftIcon, PlusIcon, SearchIcon, BookOpenIcon, UsersIcon, TrashIcon } from '../../components/icons/Icons';
 
 interface ClassManagementProps {
     setView: (view: 'dashboard' | 'generate' | 'teachers' | 'classes') => void;
 }
 
 const ClassManagement: React.FC<ClassManagementProps> = ({ setView }) => {
-    const { timetables, updateTimetable, teachers } = useAppContext();
+    const { timetables, updateTimetable, teachers, deleteTimetable } = useAppContext();
     const [editingTimetable, setEditingTimetable] = useState<Timetable | null>(null);
     const [editingLecture, setEditingLecture] = useState<{ dayIndex: number; lectureIndex: number; lecture: Lecture } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +47,12 @@ const ClassManagement: React.FC<ClassManagementProps> = ({ setView }) => {
             setEditingTimetable(newTimetable);
         }
     };
+
+    const handleDelete = (timetableId: string, name: string) => {
+        if (window.confirm(`Are you sure you want to delete the schedule for ${name}? This action cannot be undone.`)) {
+            deleteTimetable(timetableId);
+        }
+    };
     
     const subjectsForTimetable = editingTimetable ? MOCK_SUBJECTS_BY_DEPT[editingTimetable.department]?.[editingTimetable.year]?.[editingTimetable.semester] || [] : [];
     
@@ -67,7 +73,7 @@ const ClassManagement: React.FC<ClassManagementProps> = ({ setView }) => {
             </button>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Manage Classes</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Manage Schedules</h1>
                     <p className="text-gray-500 mt-1">Configure classes, sections, and timings</p>
                 </div>
                 <Button onClick={() => setView('generate')} className="flex items-center justify-center">
@@ -115,7 +121,16 @@ const ClassManagement: React.FC<ClassManagementProps> = ({ setView }) => {
                                 <h2 className="text-xl font-bold text-gray-800">{timetable.year} - {timetable.semester}</h2>
                                 <p className="text-sm text-gray-500">{timetable.department} ({timetable.startDate} to {timetable.endDate})</p>
                             </div>
-                            <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full mt-2 sm:mt-0">{timetable.schedule.reduce((acc, d) => acc + d.lectures.length, 0)} Lectures</span>
+                            <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+                                <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{timetable.schedule.reduce((acc, d) => acc + d.lectures.length, 0)} Lectures</span>
+                                <button 
+                                    onClick={() => handleDelete(timetable.id, `${timetable.year} - ${timetable.semester}`)}
+                                    className="text-gray-400 hover:text-red-600 p-1 rounded-full transition-colors"
+                                    title="Delete Schedule"
+                                >
+                                    <TrashIcon className="h-5 w-5" />
+                                </button>
+                            </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">

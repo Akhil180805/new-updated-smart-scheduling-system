@@ -8,7 +8,7 @@ import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import { Timetable, Subject, Teacher } from '../../types';
-import { ChevronLeftIcon } from '../../components/icons/Icons';
+import { ChevronLeftIcon, SpinnerIcon } from '../../components/icons/Icons';
 
 interface GenerateTimetableProps {
     setView: (view: 'dashboard' | 'generate' | 'teachers' | 'classes') => void;
@@ -106,7 +106,14 @@ const GenerateTimetable: React.FC<GenerateTimetableProps> = ({ setView }) => {
     };
 
     return (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+        <div className="relative bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+            {isLoading && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col justify-center items-center z-10 rounded-lg">
+                    <SpinnerIcon className="w-12 h-12 animate-spin text-blue-600" />
+                    <p className="mt-4 text-lg font-semibold text-gray-700">Generating Schedule...</p>
+                    <p className="text-gray-500">The AI is working. This may take a moment.</p>
+                </div>
+            )}
             <button onClick={() => setView('dashboard')} className="flex items-center text-sm font-semibold text-gray-600 hover:text-gray-900 mb-4">
                 <ChevronLeftIcon />
                 <span className="ml-1">Back to Dashboard</span>
@@ -127,14 +134,27 @@ const GenerateTimetable: React.FC<GenerateTimetableProps> = ({ setView }) => {
                     <div className="md:col-span-2">
                         <h3 className="block text-sm font-medium text-gray-700 mb-2">Select Subjects</h3>
                         <div className="p-3 bg-gray-50 border rounded-md max-h-60 overflow-y-auto">
-                            {subjects.length > 0 ? subjects.map(s => (
-                                <div key={s.code} className="flex items-center">
-                                    <input type="checkbox" id={`sub-${s.code}`} checked={selectedSubjects.some(sub => sub.code === s.code)} onChange={() => handleSubjectChange(s)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                                    <label htmlFor={`sub-${s.code}`} className="ml-2 block text-sm text-gray-900">
-                                        {s.name} - <span className="text-gray-500">{s.defaultTeacher}</span>
-                                    </label>
-                                </div>
-                            )) : <p className="text-gray-500 text-sm">No subjects found for this selection.</p>}
+                            {subjects.length > 0 ? subjects.map(s => {
+                                const teacherExists = teachers.some(t => t.name === s.defaultTeacher);
+                                return (
+                                    <div key={s.code} className="flex items-center my-1">
+                                        <input 
+                                            type="checkbox" 
+                                            id={`sub-${s.code}`} 
+                                            checked={selectedSubjects.some(sub => sub.code === s.code)} 
+                                            onChange={() => handleSubjectChange(s)} 
+                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                                            disabled={!teacherExists}
+                                        />
+                                        <label htmlFor={`sub-${s.code}`} className={`ml-2 block text-sm ${!teacherExists && 'text-gray-400'}`}>
+                                            {s.name} - 
+                                            <span className={teacherExists ? 'text-gray-500' : 'text-red-500 font-semibold'}>
+                                                {teacherExists ? ` ${s.defaultTeacher}` : ' [Unassigned - Teacher not registered]'}
+                                            </span>
+                                        </label>
+                                    </div>
+                                )
+                            }) : <p className="text-gray-500 text-sm">No subjects found for this selection.</p>}
                         </div>
                     </div>
                     <Input label="Start Time" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />

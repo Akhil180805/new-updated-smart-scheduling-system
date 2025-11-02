@@ -7,6 +7,7 @@ export interface User {
 
 export interface Teacher extends User {
   role: 'teacher';
+  password?: string;
   phoneNumber: string;
   age?: number;
   location: string;

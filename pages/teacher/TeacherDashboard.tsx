@@ -11,9 +11,12 @@ import Select from '../../components/common/Select';
 import { DEPARTMENTS } from '../../services/mockData';
 
 
-const parseDateString = (dateStr: string): Date => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day);
+const getTodayDateString = () => {
+    const today = new Date();
+    // Adjust for timezone offset to get local date as YYYY-MM-DD
+    const offset = today.getTimezoneOffset();
+    const todayWithOffset = new Date(today.getTime() - (offset * 60 * 1000));
+    return todayWithOffset.toISOString().split('T')[0];
 };
 
 const TeacherDashboard: React.FC = () => {
@@ -46,15 +49,12 @@ const TeacherDashboard: React.FC = () => {
         })).filter(day => day.lectures.length > 0)
     })).filter(tt => tt.schedule.length > 0);
 
-    const now = new Date();
-    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayString = getTodayDateString();
+    const todayDayStr = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
-    const activeTeacherTimetables = teacherTimetables.filter(tt => {
-        const startDate = parseDateString(tt.startDate);
-        const endDate = parseDateString(tt.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        return todayDate >= startDate && todayDate <= endDate;
-    });
+    const activeTeacherTimetables = teacherTimetables.filter(tt => 
+        todayString >= tt.startDate && todayString <= tt.endDate
+    );
 
     const totalLecturesAllTime = teacherTimetables.reduce((acc, tt) => acc + tt.schedule.reduce((sAcc, day) => sAcc + day.lectures.length, 0), 0);
     
@@ -62,8 +62,7 @@ const TeacherDashboard: React.FC = () => {
         return total + tt.schedule.reduce((sAcc, day) => sAcc + day.lectures.length, 0);
     }, 0);
 
-    const today = now.toLocaleDateString('en-US', { weekday: 'long' });
-    const todaysSchedule = activeTeacherTimetables.flatMap(tt => tt.schedule.filter(d => d.day === today));
+    const todaysSchedule = activeTeacherTimetables.flatMap(tt => tt.schedule.filter(d => d.day === todayDayStr));
 
     const weeklyDayButtons = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 

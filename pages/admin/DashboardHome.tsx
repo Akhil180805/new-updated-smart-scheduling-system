@@ -22,31 +22,26 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
     </div>
 );
 
-const parseDateString = (dateStr: string): Date => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(year, month - 1, day);
+const getTodayDateString = () => {
+    const today = new Date();
+    // Adjust for timezone offset to get local date as YYYY-MM-DD
+    const offset = today.getTimezoneOffset();
+    const todayWithOffset = new Date(today.getTime() - (offset * 60 * 1000));
+    return todayWithOffset.toISOString().split('T')[0];
 };
 
 const DashboardHome: React.FC<DashboardHomeProps> = ({ setView }) => {
     const { timetables, teachers } = useAppContext();
 
-    const now = new Date();
-    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayString = getTodayDateString();
+    const todayDayStr = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
-    const activeSchedulesCount = timetables.filter(tt => {
-        const startDate = parseDateString(tt.startDate);
-        const endDate = parseDateString(tt.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        return todayDate >= startDate && todayDate <= endDate;
-    }).length;
+    const activeSchedulesCount = timetables.filter(tt => 
+        todayString >= tt.startDate && todayString <= tt.endDate
+    ).length;
 
-    const todayDayStr = now.toLocaleDateString('en-US', { weekday: 'long' });
-    
     const todaysLecturesCount = timetables.reduce((acc, tt) => {
-        const startDate = parseDateString(tt.startDate);
-        const endDate = parseDateString(tt.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        const isActive = todayDate >= startDate && todayDate <= endDate;
+        const isActive = todayString >= tt.startDate && todayString <= tt.endDate;
         if (!isActive) return acc;
 
         const daySchedule = tt.schedule.find(d => d.day === todayDayStr);
@@ -54,16 +49,11 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ setView }) => {
     }, 0);
 
     const todaysSchedule: Lecture[] = timetables
-        .filter(tt => {
-            const startDate = parseDateString(tt.startDate);
-            const endDate = parseDateString(tt.endDate);
-            endDate.setHours(23, 59, 59, 999);
-            return todayDate >= startDate && todayDate <= endDate;
-        })
+        .filter(tt => todayString >= tt.startDate && todayString <= tt.endDate)
         .flatMap(tt => tt.schedule.filter(d => d.day === todayDayStr).flatMap(d => d.lectures))
         .sort((a, b) => a.time.localeCompare(b.time));
 
-    const weeklyData = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => {
+    const weeklyData = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => {
         const lectures = timetables.flatMap(tt => tt.schedule.filter(d => d.day === day).flatMap(d => d.lectures.filter(l => !l.isBreak))).length;
         return { name: day.substring(0, 3), lectures };
     });
@@ -78,7 +68,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ setView }) => {
                 <div className="flex items-center space-x-3">
                     <Button variant="secondary" onClick={() => setView('classes')}>
                         <ViewGridIcon />
-                        <span className="ml-2">View Timetable</span>
+                        <span className="ml-2">Manage Schedules</span>
                     </Button>
                      <Button onClick={() => setView('generate')}>
                         <PlusIcon />
